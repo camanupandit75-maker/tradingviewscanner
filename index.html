@@ -109,8 +109,8 @@ const FALLBACK = {
 };
 
 // ─── TradingView API config ──────────────────────────────────────────────────
-const TV_URL   = "https://scanner.tradingview.com/india/scan";
-const PROXY    = "https://corsproxy.io/?url=";
+const TV_URL   = "/api/screener";
+
 const COLUMNS  = ["name","close","change","volume","market_cap_basic","RSI","MACD.macd","sector","Perf.1M","Perf.W","vol_ratio_10d"];
 
 function buildBody(sortBy, sortOrder, extraFilters = []) {

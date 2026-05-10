@@ -1,4 +1,25 @@
-const STOCKS = "RELIANCE.NS,HDFCBANK.NS,BHARTIARTL.NS,SBIN.NS,ICICIBANK.NS,INFY.NS,TCS.NS,LT.NS,TITAN.NS,ITC.NS,NTPC.NS,BAJFINANCE.NS,WIPRO.NS,HCLTECH.NS,MARUTI.NS,SUNPHARMA.NS,BRITANNIA.NS,DRREDDY.NS,CIPLA.NS,APOLLOHOSP.NS,JSWSTEEL.NS,HINDALCO.NS,TATASTEEL.NS,VEDL.NS,SHREECEM.NS,BPCL.NS,TECHM.NS,DABUR.NS,PNBHOUSING.NS,YESBANK.NS,PNB.NS,CANBK.NS,MOTHERSON.NS,TATAPOWER.NS,IDEA.NS,SUZLON.NS,BERGEPAINT.NS,LUPIN.NS,COFORGE.NS,HFCL.NS,NBCC.NS,BHEL.NS,HAL.NS,BEL.NS,RECLTD.NS,PFC.NS,GMRAIRPORT.NS,FSL.NS,AEROFLEX.NS,THERMAX.NS,JAINREC.NS,SANDUMA.NS,NUVAMA.NS,SONATSOFTW.NS,SKYGOLD.NS,METROPOLIS.NS,MRPL.NS,SENCO.NS,SCI.NS,OLECTRA.NS,LALPATHLAB.NS,PIRAMALFIN.NS,STLTECH.NS,FINCABLES.NS,DALBHARAT.NS,ESCORTS.NS,ACMESOLAR.NS,HCC.NS,KALYANKJIL.NS,UJJIVANSFB.NS,OLAELEC.NS,IDFCFIRSTB.NS,TATACHEM.NS,INDIGO.NS,PERSISTENT.NS,TATACONSUM.NS,NESTLEIND.NS,BAJAJFINSV.NS,EICHERMOT.NS,SBILIFE.NS,HDFCLIFE.NS,ADANIPORTS.NS,KOTAKBANK.NS,AXISBANK.NS,INDUSINDBK.NS";
+const STOCKS = "RELIANCE.NS,HDFCBANK.NS,BHARTIARTL.NS,SBIN.NS,ICICIBANK.NS,INFY.NS,TCS.NS,LT.NS,TITAN.NS,ITC.NS,NTPC.NS,BAJFINANCE.NS,WIPRO.NS,HCLTECH.NS,MARUTI.NS,SUNPHARMA.NS,BRITANNIA.NS,DRREDDY.NS,CIPLA.NS,APOLLOHOSP.NS,JSWSTEEL.NS,HINDALCO.NS,TATASTEEL.NS,VEDL.NS,TECHM.NS,DABUR.NS,PNBHOUSING.NS,YESBANK.NS,PNB.NS,CANBK.NS,MOTHERSON.NS,TATAPOWER.NS,IDEA.NS,SUZLON.NS,BERGEPAINT.NS,LUPIN.NS,COFORGE.NS,HFCL.NS,NBCC.NS,BHEL.NS,HAL.NS,BEL.NS,RECLTD.NS,PFC.NS,GMRAIRPORT.NS,INDUSINDBK.NS,KOTAKBANK.NS,AXISBANK.NS,PERSISTENT.NS,TATACONSUM.NS,NESTLEIND.NS,BAJAJFINSV.NS,EICHERMOT.NS,SBILIFE.NS,HDFCLIFE.NS,ADANIPORTS.NS,GRASIM.NS,INDIGO.NS,MUTHOOTFIN.NS,CHOLAFIN.NS,LTIMINDTREE.NS,PIDILITIND.NS,SHREECEM.NS,BPCL.NS,IRCTC.NS,RVNL.NS,IRFC.NS,NHPC.NS,SJVN.NS,ADANIENT.NS,TATAPOWER.NS,COALINDIA.NS,ONGC.NS,POWERGRID.NS";
+
+async function getYahooCrumb() {
+  const page = await fetch("https://finance.yahoo.com/", {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "text/html",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+  });
+  const setCookie = page.headers.get("set-cookie") || "";
+  const cookieStr = setCookie.split(/,(?=\s*\w+=)/).map(c => c.split(";")[0].trim()).join("; ");
+
+  const crumbRes = await fetch("https://query2.finance.yahoo.com/v1/test/getcrumb", {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "Cookie": cookieStr,
+    },
+  });
+  const crumb = (await crumbRes.text()).trim();
+  return { cookieStr, crumb };
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -16,10 +37,17 @@ module.exports = async function handler(req, res) {
   const [sortKey, sortDir] = sortMap[tab] || sortMap.gainers;
 
   try {
-    const r = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${STOCKS}&lang=en&region=IN`,
-      { headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json" } }
-    );
+    const { cookieStr, crumb } = await getYahooCrumb();
+    const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${STOCKS}&crumb=${encodeURIComponent(crumb)}`;
+
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Cookie": cookieStr,
+        "Accept": "application/json",
+      },
+    });
+
     if (!r.ok) return res.status(r.status).json({ error: `Yahoo: ${r.status}` });
 
     const json = await r.json();
